@@ -43,3 +43,12 @@ Make sure to read the [NWC Client typings](./nwc.d.ts) when using any of the bel
 - [How to pay a BOLT-11 lightning invoice](pay-invoice.md)
 - [How to create, settle and cancel HOLD invoices for conditional payments](hold-invoices.md)
 - [Error handling: error types, wallet error codes, and retry patterns](./error-handling.md)
+
+## Advanced: NWAClient and NWCWalletService
+
+The typings also export `NWAClient` (Nostr Wallet Auth — for wallet-initiated connections) and `NWCWalletService` (for building a wallet service that *acts as* a NWC-compatible wallet provider). These are **advanced use cases** and should not be used unless the user explicitly asks to:
+
+- Build a wallet service / wallet provider (use `NWCWalletService`)
+- Implement Nostr Wallet Auth connection flows (use `NWAClient`)
+
+For typical application development (sending/receiving payments, checking balances, etc.), use `NWCClient` as documented above.
