@@ -30,6 +30,23 @@ console.log("Invoice:", transaction.invoice);
 console.log("Payment hash:", transaction.payment_hash);
 ```
 
+### Create an invoice with metadata
+
+Metadata lets you attach structured information to an invoice, such as payer requirements or internal identifiers:
+
+```ts
+const transaction = await client.makeInvoice({
+  amount: 500000, // 500 sats in millisats
+  description: "Donation",
+  metadata: {
+    comment: "Thanks for the great work!",
+    recipient_data: {
+      identifier: "order-456",
+    },
+  },
+});
+```
+
 To wait for the invoice to be paid, use [notifications](./notifications.md).
 
 ## Look Up an Invoice
@@ -125,6 +142,60 @@ const result = await client.multiPayInvoice({
 
 for (const paid of result.invoices) {
   console.log(`Paid ${paid.dTag}: preimage ${paid.preimage}`);
+}
+```
+
+## Pay an Amountless Invoice
+
+Some invoices are created without a fixed amount (e.g. tip jars, donations). When paying these, you must provide the `amount` field (in millisats):
+
+```ts
+const response = await client.payInvoice({
+  invoice: amountlessInvoice,
+  amount: 5000000, // 5000 sats in millisats — you choose the amount
+});
+console.log("Preimage:", response.preimage);
+```
+
+If you try to pay an amountless invoice without specifying `amount`, the wallet will return an error.
+
+## Send a Payment with Metadata
+
+You can attach metadata when sending a payment. This is useful for adding context visible to the recipient:
+
+```ts
+const response = await client.payInvoice({
+  invoice,
+  metadata: {
+    comment: "Payment for invoice #789",
+    payer_data: {
+      name: "Alice",
+      email: "alice@example.com",
+    },
+  },
+});
+```
+
+## Reading Transaction Metadata
+
+Transactions returned from `listTransactions`, `lookupInvoice`, `makeInvoice`, and notifications may include metadata:
+
+```ts
+const { transactions } = await client.listTransactions({ limit: 10 });
+
+for (const tx of transactions) {
+  if (tx.metadata?.comment) {
+    console.log("Comment:", tx.metadata.comment);
+  }
+  if (tx.metadata?.payer_data?.name) {
+    console.log("Payer:", tx.metadata.payer_data.name);
+  }
+  if (tx.metadata?.payer_data?.email) {
+    console.log("Email:", tx.metadata.payer_data.email);
+  }
+  if (tx.metadata?.recipient_data?.identifier) {
+    console.log("Recipient ID:", tx.metadata.recipient_data.identifier);
+  }
 }
 ```
 
