@@ -37,7 +37,7 @@ or
 
 ## ⚠️ SSR / SSG Warning (Next.js, Nuxt, SvelteKit, Remix, Astro)
 
-Bitcoin Connect requires a browser DOM and **will crash if imported on the server**. In frameworks that do server-side rendering or static site generation, you MUST use dynamic imports or client-only wrappers.
+Bitcoin Connect requires a browser DOM and **will crash if imported on the server**. In frameworks that do server-side rendering or static site generation, you MUST use dynamic imports or client-only wrappers. Never import `@getalby/bitcoin-connect` or `@getalby/bitcoin-connect-react` in server code or shared modules that execute during SSR — gate imports to the client and dynamically load components.
 
 ### Next.js (App Router)
 
@@ -119,7 +119,7 @@ Unlike NWC, WebLN operates on sats, not millisats. (1000 millisats = 1 satoshi)
 
 ## Initialization
 
-Call `init()` **once** when your app starts. Do NOT call it multiple times or conditionally inside render loops.
+Call `init()` **once** when your app starts. Do NOT call it multiple times or conditionally inside render loops. If you have multiple entry points/components, centralize `init()` to a single client-only location to avoid duplicate initialization.
 
 **Where to call `init()`:**
 

@@ -93,6 +93,14 @@ try {
 }
 ```
 
+## Budget and Permission Guardrails
+
+- `QUOTA_EXCEEDED`: surface a clear message (e.g., "Budget reached. Approve a higher budget or wait for renewal.") and prompt the user to re-authorize with a larger budget or wait until `renewal_period`. You can inspect `getBudget()` to show `used_budget`, `total_budget`, and `renews_at`.
+- `RESTRICTED`: the connection lacks the required permission for the requested method. Ask the user to create a new connection with the needed methods enabled (`request_methods`) and reconnect.
+- `UNAUTHORIZED`: connection is invalid/expired; request a fresh connection secret.
+- `RATE_LIMITED`: back off and retry later with exponential backoff.
+- Always redact the `nostrWalletConnectUrl` and secrets from logs and error messages.
+
 ## Retry Pattern for Transient Errors
 
 Network and timeout errors are often transient. Here is a simple retry wrapper:

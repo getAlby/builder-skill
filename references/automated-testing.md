@@ -10,31 +10,49 @@ Each test can create brand new wallet(s) as required to ensure reproducable resu
 
 ### Code Example
 
-The below example allows for temporary networking errors.
+The below example allows for temporary networking errors and is reusable as a fixture helper.
 
 ```ts
-async function createTestWallet(retries = 3): Promise<{ nwcUrl: string; lightningAddress: string }> {
+type TestWallet = { nwcUrl: string; lightningAddress: string };
+
+async function createTestWallet({
+  retries = 4,
+  delayMs = 500,
+  balance = 10000,
+}: {
+  retries?: number;
+  delayMs?: number;
+  balance?: number;
+} = {}): Promise<TestWallet> {
+  let lastError: Error | undefined;
   for (let i = 0; i < retries; i++) {
-    const response = await fetch("https://faucet.nwc.dev?balance=10000", { method: "POST" });
-    if (!response.ok) {
-      if (i < retries - 1) {
-        await new Promise((r) => setTimeout(r, 1000));
-        continue;
+    try {
+      const response = await fetch(`https://faucet.nwc.dev?balance=${balance}`, { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`Faucet request failed: ${response.status} ${await response.text()}`);
       }
-      throw new Error(`Faucet request failed: ${response.status} ${await response.text()}`);
+      const nwcUrl = (await response.text()).trim();
+      const lud16Match = nwcUrl.match(/lud16=([^&\s]+)/);
+      if (!lud16Match) {
+        throw new Error(`No lud16 found in NWC URL: ${nwcUrl}`);
+      }
+      const lightningAddress = decodeURIComponent(lud16Match[1]);
+      return { nwcUrl, lightningAddress };
+    } catch (error) {
+      lastError = error as Error;
+      if (i < retries - 1) {
+        await new Promise((r) => setTimeout(r, delayMs * (i + 1)));
+      }
     }
-    const nwcUrl = (await response.text()).trim();
-    const lud16Match = nwcUrl.match(/lud16=([^&\s]+)/);
-    if (!lud16Match) {
-      throw new Error(`No lud16 found in NWC URL: ${nwcUrl}`);
-    }
-    const lightningAddress = decodeURIComponent(lud16Match[1]);
-    return { nwcUrl, lightningAddress };
   }
-  throw new Error("Failed to create test wallet after retries");
+  throw lastError ?? new Error("Failed to create test wallet after retries");
 }
 ```
 
-## What to test
+#### Fixture patterns (Jest/Vitest/Playwright)
 
-Test both happy path and failure cases (payment failed with insufficient balance etc.)
+- Create a fresh wallet per test (or per suite) to avoid state bleed and flakiness.
+- Expose `nwcUrl` via env or in-memory fixtures; never log or print the secret.
+- In Playwright E2E, pass `nwcUrl` to the app via query param or `page.evaluate` to set it in localStorage/sessionStorage as a setup step.
+- Add a top-up helper for balance-sensitive flows: `POST https://faucet.nwc.dev/wallets/<username>/topup?amount=...`.
+- Cover failure cases with real flows (insufficient balance, expired invoice, rate limit) and not just mocks.

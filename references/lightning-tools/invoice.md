@@ -34,9 +34,16 @@ console.log("Created:", invoice.createdDate);
 console.log("Expires:", invoice.expiryDate); // may be undefined
 ```
 
-## Invoice Expiration
+## Invoice Expiration & Safety Checklist
 
 Lightning invoices expire — typically after 1 hour, but the expiry varies by wallet. Always check expiry before presenting an invoice to a user or attempting to pay it.
+
+Payment safety checklist before paying:
+- Decode the invoice and ensure the `paymentHash` matches what you expect to pay.
+- Check expiry and warn if the remaining time is low (e.g., under 60 seconds).
+- If the invoice is amountless, ensure you set the intended amount explicitly when paying.
+- When mixing libraries, remember units: `NWCClient` uses **msats**, Lightning Tools / WebLN / Bitcoin Connect use **sats**.
+- For invoices sourced from LNURL-pay, use LNURL-Verify when available to confirm external payments.
 
 ### Check if an invoice has expired
 
@@ -48,6 +55,9 @@ if (invoice.hasExpired()) {
   if (invoice.expiryDate) {
     const remainingMs = invoice.expiryDate.getTime() - Date.now();
     console.log("Expires in:", Math.floor(remainingMs / 1000), "seconds");
+    if (remainingMs < 60_000) {
+      console.warn("Invoice expires in less than 60 seconds.");
+    }
   }
 }
 ```
@@ -66,7 +76,6 @@ function validateInvoiceBeforePayment(paymentRequest: string): Invoice {
     throw new Error("Invoice has expired. Request a new one.");
   }
 
-  // Optional: warn if expiring soon (e.g. less than 60 seconds)
   if (invoice.expiryDate) {
     const remainingMs = invoice.expiryDate.getTime() - Date.now();
     if (remainingMs < 60_000) {

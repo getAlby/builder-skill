@@ -153,11 +153,18 @@ useEffect(() => {
 
 When subscribing to notifications in a Node.js script, the process must stay alive for the subscription to work. The WebSocket connection kept open by `subscribeNotifications` will keep the Node.js event loop running automatically — no extra keep-alive code is needed. The process will stay alive as long as the subscription is active. Call `unsub()` and `client.close()` when you want the process to exit.
 
-## Advanced: NWAClient and NWCWalletService
+## Advanced: Creating new connections and NWA/NWCWalletService
 
-The typings also export `NWAClient` (Nostr Wallet Auth — for wallet-initiated connections) and `NWCWalletService` (for building a wallet service that *acts as* a NWC-compatible wallet provider). These are **advanced use cases** and should not be used unless the user explicitly asks to:
+To mint new app connections programmatically, use the authorization helpers:
 
-- Build a wallet service / wallet provider (use `NWCWalletService`)
-- Implement Nostr Wallet Auth connection flows (use `NWAClient`)
+- `NWCClient.getAuthorizationUrl(basePath, options, pubkey)` to build a deeplink/QR for a wallet UI that will provision a new connection with requested methods, budget, expiry, isolated flag, etc.
+- `NWCClient.fromAuthorizationUrl(basePath, options?, secret?)` to generate and return a ready `NWCClient` plus the full `nostrWalletConnectUrl` you should persist (store securely, never log). Show the resulting URL to the user (deeplink or QR) so they can approve it.
+- `client.createConnection({ pubkey, name, request_methods, ... })` to request a scoped connection from within an existing session.
 
-For typical application development (sending/receiving payments, checking balances, etc.), use `NWCClient` as documented above.
+When you receive the resulting `nostrWalletConnectUrl`, persist it securely (env var on backend; user-controlled persistence on frontend) and never print or log it.
+
+The typings also export `NWAClient` (Nostr Wallet Auth — wallet-initiated connections) and `NWCWalletService` (build a wallet provider). These are **advanced** and should only be used when you intend to:
+- Build a wallet service/provider (use `NWCWalletService`).
+- Implement wallet-initiated auth flows (use `NWAClient`).
+
+For typical application development (sending/receiving payments, checking balances, notifications, budgets), use `NWCClient` as documented above.
