@@ -39,6 +39,56 @@ When combining libraries, always convert:
 - NWC millisats → sats: `Math.floor(millisats / 1000)`
 - sats → NWC millisats: `sats * 1000`
 
+## Node.js Project Setup
+
+All packages in this skill are **ESM-only**. When creating a new Node.js project:
+
+1. Set `"type": "module"` in `package.json`
+2. For TypeScript, use the following minimal `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "esModuleInterop": true,
+    "outDir": "dist",
+    "strict": true
+  }
+}
+```
+
+3. Install dependencies based on what you need:
+
+```bash
+# NWC Client (wallet operations)
+npm install @getalby/sdk
+
+# Lightning Tools (invoices, lightning addresses, fiat conversion)
+npm install @getalby/lightning-tools
+
+# Both (common for backend apps)
+npm install @getalby/sdk @getalby/lightning-tools
+
+# Bitcoin Connect (browser only — do NOT install for Node.js-only projects)
+npm install @getalby/bitcoin-connect
+# or for React specifically:
+npm install @getalby/bitcoin-connect-react
+```
+
+4. If using TypeScript with Bitcoin Connect, also install WebLN types:
+
+```bash
+npm install -D @webbtc/webln-types
+```
+
+Then create a `webln-types.d.ts` file:
+
+```ts
+/// <reference types="@webbtc/webln-types" />
+```
+
 ## Prefer Typescript
 
 When the user says to use "JS" or "Javascript" or "NodeJS" or something similar, use typescript unless the user explicitly says to not use typescript or the project does not support it.
