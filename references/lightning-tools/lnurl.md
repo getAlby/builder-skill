@@ -18,3 +18,23 @@ NOTE: not all lightning address providers support LNURL-Verify.
 ```ts
 const isPaid = await invoice.isPaid();
 ```
+
+## Proxy Configuration (Browser vs Node.js)
+
+In the browser, lightning address requests are subject to CORS restrictions. By default, `LightningAddress` routes requests through a proxy (`https://api.getalby.com/lnurl`) to avoid CORS errors. This works out of the box for browser apps.
+
+In Node.js / server-side environments, you can disable the proxy for direct requests:
+
+```ts
+const ln = new LightningAddress("hello@getalby.com", {
+  proxy: false,
+});
+```
+
+You can also provide a custom proxy URL:
+
+```ts
+const ln = new LightningAddress("hello@getalby.com", {
+  proxy: "https://my-proxy.example.com/lnurl",
+});
+```
