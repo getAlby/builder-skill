@@ -4,6 +4,16 @@
 
 Install the NPM package `@getalby/lightning-tools`. The latest version is 6.1.0.
 
+## Imports
+
+Use subpath imports to import only what you need:
+
+- `@getalby/lightning-tools/lnurl` — `LightningAddress` and LNURL utilities
+- `@getalby/lightning-tools/fiat` — Fiat currency conversion functions
+- `@getalby/lightning-tools/bolt11` — `Invoice` class and `decodeInvoice`
+
+Do NOT import from the package root (e.g. `import { LightningAddress } from "@getalby/lightning-tools"`). Always use the subpath imports shown in the examples.
+
 ## Units
 
 All referenced files in this folder operate in satoshis (sats).
