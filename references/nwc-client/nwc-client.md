@@ -38,6 +38,7 @@ const client = new NWCClient({
 
 Make sure to read the [NWC Client typings](./nwc.d.ts) when using any of the below referenced files.
 
+- [Common operations: getBalance, makeInvoice, getInfo, listTransactions, lookupInvoice, getBudget, signMessage, multiPayInvoice](./common-operations.md)
 - [subscribe to notifications of sent or received payments](./notifications.md)
 - [How to pay a BOLT-11 lightning invoice](pay-invoice.md)
 - [How to create, settle and cancel HOLD invoices for conditional payments](hold-invoices.md)
