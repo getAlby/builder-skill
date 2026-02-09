@@ -66,6 +66,10 @@ Testing wallets should be used for [automated testing](./references/automated-te
 
 It is recommended to write tests so that the agent can test its own work and fix bugs itself without requiring human input.
 
+## Cross-Library Recipe
+
+When combining NWC Client and Lightning Tools (e.g. fiat conversion + invoicing + forwarding payments), see the [cross-library recipe](./references/cross-library-recipe.md) for a full end-to-end example with proper unit conversion.
+
 ## Production Wallet
 
 If they do not have a wallet yet [here are some options](./references/production-wallets.md)
