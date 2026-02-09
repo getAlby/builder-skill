@@ -17,6 +17,28 @@ Use this skill to understand how to build apps that require bitcoin lightning wa
 - [Lightning Tools: Request invoices from a lightning address, parse BOLT-11 invoices, verify a preimage for a BOLT-11 invoice, LNURL-Verify, do bitcoin <-> fiat conversions](./references/lightning-tools/lightning-tools.md)
 - [Bitcoin Connect: Browser-only UI components for connecting wallets and accepting payments in React, Vue, or pure HTML web apps](./references/bitcoin-connect/bitcoin-connect.md)
 
+## Which library to use
+
+| Scenario | Library | Runtime |
+|---|---|---|
+| Backend / server-side / console app wallet operations (send, receive, balance, invoices, notifications) | NWC Client (`@getalby/sdk`) | Node.js, Deno, Bun, Browser |
+| Browser / frontend wallet connection UI and payment modals | Bitcoin Connect (`@getalby/bitcoin-connect`) | Browser only |
+| Utility: parse invoices, lightning address lookups, fiat conversion, LNURL | Lightning Tools (`@getalby/lightning-tools`) | Node.js, Deno, Bun, Browser |
+| Backend + Frontend in the same app | NWC Client (backend) + Bitcoin Connect (frontend) | Both |
+
+- **Do NOT use Bitcoin Connect in Node.js / server-side environments** — it requires a browser DOM.
+- **Do NOT use NWC Client in the frontend if the goal is wallet connection UI** — use Bitcoin Connect instead, which provides the UI and manages the NWC connection for you.
+- NWC Client and Lightning Tools can be freely combined in any environment.
+
+## ⚠️ Unit Warning
+
+NWC Client operates in **millisats** (1 sat = 1,000 millisats).
+Lightning Tools and Bitcoin Connect/WebLN operate in **sats**.
+
+When combining libraries, always convert:
+- NWC millisats → sats: `Math.floor(millisats / 1000)`
+- sats → NWC millisats: `sats * 1000`
+
 ## Prefer Typescript
 
 When the user says to use "JS" or "Javascript" or "NodeJS" or something similar, use typescript unless the user explicitly says to not use typescript or the project does not support it.
