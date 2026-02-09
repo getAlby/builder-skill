@@ -44,6 +44,27 @@ Make sure to read the [NWC Client typings](./nwc.d.ts) when using any of the bel
 - [How to create, settle and cancel HOLD invoices for conditional payments](hold-invoices.md)
 - [Error handling: error types, wallet error codes, and retry patterns](./error-handling.md)
 
+## Cleanup
+
+Always close the client when your application exits to avoid leaked WebSocket connections:
+
+```ts
+process.on("SIGINT", () => {
+  client.close();
+  process.exit();
+});
+```
+
+If you are using `subscribeNotifications`, unsubscribe before closing:
+
+```ts
+const unsub = await client.subscribeNotifications(onNotification);
+
+// later, when shutting down:
+unsub();
+client.close();
+```
+
 ## Advanced: NWAClient and NWCWalletService
 
 The typings also export `NWAClient` (Nostr Wallet Auth — for wallet-initiated connections) and `NWCWalletService` (for building a wallet service that *acts as* a NWC-compatible wallet provider). These are **advanced use cases** and should not be used unless the user explicitly asks to:
