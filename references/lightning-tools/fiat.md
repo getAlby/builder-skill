@@ -8,7 +8,7 @@ Useful to give the user ability to pick a currency, or verify if a fiat currency
 
 ```ts
 import { getFiatCurrencies } from "@getalby/lightning-tools/fiat";
-const fiatCurrencies = await fiat.getFiatCurrencies();
+const fiatCurrencies = await getFiatCurrencies();
 ```
 
 ## Fiat amount to Sats
@@ -29,4 +29,18 @@ const fiatValue = await getFiatValue({
   satoshi,
   currency,
 });
+```
+
+## Sats to Formatted Fiat String
+
+Returns a locale-formatted string like `"$1.23"` or `"€1,23"` — preferred for displaying to users:
+
+```ts
+import { getFormattedFiatValue } from "@getalby/lightning-tools/fiat";
+const formatted = await getFormattedFiatValue({
+  satoshi,
+  currency, // e.g. "USD"
+  locale, // e.g. "en-US"
+});
+console.log(formatted); // e.g. "$1.23"
 ```
