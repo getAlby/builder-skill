@@ -251,10 +251,20 @@ declare class NoStorage implements KVStorage {
     setItem(key: string, value: unknown): void;
 }
 declare const parseL402: (input: string) => Record<string, string>;
+declare const makeAuthenticateHeader: (args: {
+    macaroon: string;
+    invoice: string;
+    key?: string;
+}) => string;
 
+interface Wallet {
+    sendPayment(paymentRequest: string): Promise<{
+        preimage: string;
+    }>;
+}
 declare const fetchWithL402: (url: string, fetchArgs: RequestInit, options: {
     headerKey?: string;
-    webln?: WebLNProvider;
+    wallet?: Wallet;
     store?: KVStorage;
 }) => Promise<Response>;
 
@@ -280,5 +290,5 @@ declare const getFormattedFiatValue: ({ satoshi, currency, locale, }: {
     locale: string;
 }) => Promise<string>;
 
-export { DEFAULT_PROXY, Invoice, LN_ADDRESS_REGEX, LightningAddress, MemoryStorage, NoStorage, decodeInvoice, fetchWithL402, fromHexString, generateZapEvent, getEventHash, getFiatBtcRate, getFiatCurrencies, getFiatValue, getFormattedFiatValue, getSatoshiValue, isUrl, isValidAmount, parseKeysendResponse, parseL402, parseLnUrlPayResponse, parseNostrResponse, sendBoostagram, serializeEvent, validateEvent };
+export { DEFAULT_PROXY, Invoice, LN_ADDRESS_REGEX, LightningAddress, MemoryStorage, NoStorage, decodeInvoice, fetchWithL402, fromHexString, generateZapEvent, getEventHash, getFiatBtcRate, getFiatCurrencies, getFiatValue, getFormattedFiatValue, getSatoshiValue, isUrl, isValidAmount, makeAuthenticateHeader, parseKeysendResponse, parseL402, parseLnUrlPayResponse, parseNostrResponse, sendBoostagram, serializeEvent, validateEvent };
 export type { Boost, BoostArguments, BoostOptions, Event, FiatCurrency, InvoiceArgs, KVStorage, KeySendRawData, KeysendResponse, LUD18PayerData, LUD18ServicePayerData, LnUrlPayResponse, LnUrlRawData, NostrProvider, NostrResponse, RequestInvoiceArgs, SuccessAction, WeblnBoostParams, ZapArgs, ZapOptions };

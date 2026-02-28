@@ -4,7 +4,7 @@ description: Add bitcoin lightning wallet capabilities to your app using Nostr W
 license: Apache-2.0
 metadata:
   author: getAlby
-  version: "1.2.0"
+  version: "1.2.1"
 ---
 
 # Alby Bitcoin Payments Agent Skill
