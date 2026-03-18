@@ -1,4 +1,4 @@
-# Alby Bitcoin Payments Agent Skill
+# Alby Bitcoin Payments Builder Agent Skill
 
 Build lightning apps with your favorite agent, without hallucinations or even needing a wallet setup.
 

@@ -1,5 +1,5 @@
 ---
-name: alby-bitcoin-payments-agent-skill
+name: alby-bitcoin-payments-builder-agent-skill
 description: Add bitcoin lightning wallet capabilities to your app using Nostr Wallet Connect (NIP-47), LNURL, and WebLN. Send and receive payments, handle payment notifications, fetch wallet balance and transaction list, do bitcoin to fiat currency conversions, query lightning addresses, conditionally settle payments (HOLD invoices), parse BOLT-11 invoices, verify payment preimages.
 license: Apache-2.0
 metadata:
@@ -7,7 +7,7 @@ metadata:
   version: "1.2.1"
 ---
 
-# Alby Bitcoin Payments Agent Skill
+# Alby Bitcoin Payments Builder Agent Skill
 
 ## When to use this skill
 
