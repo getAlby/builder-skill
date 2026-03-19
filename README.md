@@ -1,4 +1,4 @@
-# Alby Bitcoin Payments Builder Agent Skill
+# Alby Bitcoin Builder Skill
 
 Turn your favorite agent into a bitcoin app builder.
 
