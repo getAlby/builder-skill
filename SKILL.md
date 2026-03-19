@@ -9,8 +9,6 @@ metadata:
 
 # Usage
 
-## When to use this skill
-
 Use this skill to understand how to build apps that require bitcoin lightning wallet capabilities.
 
 - [NWC Client: Interact with a wallet to do things like sending and receive payments, listen to payment notifications, fetch balance and transaction list and wallet info](./references/nwc-client/nwc-client.md)
