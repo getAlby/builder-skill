@@ -7,7 +7,7 @@ metadata:
   version: "1.2.1"
 ---
 
-# Alby Bitcoin Payments Builder Agent Skill
+# Usage
 
 ## When to use this skill
 
