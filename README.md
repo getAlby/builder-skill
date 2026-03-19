@@ -1,6 +1,8 @@
 # Alby Bitcoin Payments Builder Agent Skill
 
-Build lightning apps with your favorite agent, without hallucinations or even needing a wallet setup.
+Turn your favorite agent into a bitcoin app builder.
+
+Generate lightning-powered apps, payment flows, and wallet logic in minutes - ready to test and ship, without even needing a wallet.
 
 Before you start, try **[Alby Sandbox](https://sandbox.albylabs.com)** to see what you can build!
 
