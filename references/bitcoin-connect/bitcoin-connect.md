@@ -35,6 +35,76 @@ or
 </script>
 ```
 
+## ⚠️ SSR / SSG Warning (Next.js, Nuxt, SvelteKit, Remix, Astro)
+
+Bitcoin Connect requires a browser DOM and **will crash if imported on the server**. In frameworks that do server-side rendering or static site generation, you MUST use dynamic imports or client-only wrappers. Never import `@getalby/bitcoin-connect` or `@getalby/bitcoin-connect-react` in server code or shared modules that execute during SSR — gate imports to the client and dynamically load components.
+
+### Next.js (App Router)
+
+Mark the component as client-only and use dynamic import:
+
+```tsx
+"use client";
+
+import dynamic from "next/dynamic";
+import { useEffect } from "react";
+
+// Dynamic import — prevents server-side import of bitcoin-connect
+const BitcoinConnectButton = dynamic(
+  () => import("@getalby/bitcoin-connect-react").then((mod) => {
+    // init() must be called once before using components
+    mod.init({ appName: "My App" });
+    return { default: mod.Button };
+  }),
+  { ssr: false }
+);
+
+export default function WalletButton() {
+  return <BitcoinConnectButton />;
+}
+```
+
+### Next.js (Pages Router)
+
+```tsx
+import dynamic from "next/dynamic";
+
+const WalletButton = dynamic(
+  () => import("../components/WalletButton"),
+  { ssr: false }
+);
+```
+
+### Nuxt 3
+
+```vue
+<template>
+  <ClientOnly>
+    <BitcoinConnectButton />
+  </ClientOnly>
+</template>
+```
+
+### SvelteKit
+
+```svelte
+<script>
+  import { onMount } from "svelte";
+  import { browser } from "$app/environment";
+
+  let Button;
+  onMount(async () => {
+    const bc = await import("@getalby/bitcoin-connect");
+    bc.init({ appName: "My App" });
+    // use bc.launchModal(), bc.requestProvider(), etc.
+  });
+</script>
+```
+
+### General Rule
+
+If using any SSR framework, **never import `@getalby/bitcoin-connect` or `@getalby/bitcoin-connect-react` at the top level of a server-rendered file**. Always gate the import behind a browser/client check or dynamic import.
+
 ## Key concepts
 
 - Web components for connecting Lightning wallets and enabling WebLN
@@ -48,6 +118,15 @@ or
 Unlike NWC, WebLN operates on sats, not millisats. (1000 millisats = 1 satoshi)
 
 ## Initialization
+
+Call `init()` **once** when your app starts. Do NOT call it multiple times or conditionally inside render loops. If you have multiple entry points/components, centralize `init()` to a single client-only location to avoid duplicate initialization.
+
+**Where to call `init()`:**
+
+- **React (Vite / CRA):** in `main.tsx` or `App.tsx`, outside any component, at the top level
+- **React (Next.js):** inside the dynamically imported client component (see SSR warning above)
+- **Vue:** in `main.ts` before `createApp()`
+- **Plain HTML:** in a `<script type="module">` tag in the `<head>` or before your app code
 
 ```ts
 import { init } from "@getalby/bitcoin-connect";
