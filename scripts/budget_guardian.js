@@ -1,9 +1,14 @@
 #!/usr/bin/env node
-// Budget Guardian - spending caps with alerts
-// Usage: NWC_URL="..." node budget_guardian.js [setup|check|reset] [weekly_sats]
-// 
+// Budget Guardian - spending caps with rolling window + pending counter
+// Usage: NWC_URL="..." node budget_guardian.js [setup|status|reset|pending] [cap_sats] [--window=3600]
+//
+// Safety layers:
+//  1. Rolling window — checks last N minutes (not just calendar day)
+//  2. Pending counter — in-flight payments count as spent before they settle
+//  3. Node-verified — reads from the node's transaction history, not local state
+//
 // Game Theory: Creates commitment device - you set your own spending limit
-//            and the system enforces it, removing temptation from the equation.
+//              and the system enforces it, removing temptation from the equation.
 
 const { NWCClient } = require("@getalby/sdk/nwc");
 const { getFiatValue } = require("@getalby/lightning-tools/fiat");
@@ -21,7 +26,29 @@ function loadBudget() {
   if (fs.existsSync(BUDGET_FILE)) {
     return JSON.parse(fs.readFileSync(BUDGET_FILE, "utf8"));
   }
-  return { weekly_cap: null, alerts_enabled: true, history: [] };
+  return { 
+    weekly_cap: null, 
+    rolling_window_sec: 86400, // default: 24h rolling window
+    alerts_enabled: true, 
+    history: [],
+    pending: [] // in-flight payments tracked here
+  };
+}
+
+function loadPending() {
+  const pendingFile = path.join(path.dirname(BUDGET_FILE), "pending_payments.json");
+  if (fs.existsSync(pendingFile)) {
+    try { return JSON.parse(fs.readFileSync(pendingFile, "utf8")).payments || []; }
+    catch { return []; }
+  }
+  return [];
+}
+
+function getPendingTotal(pending, windowSec) {
+  const now = Math.floor(Date.now() / 1000);
+  return pending
+    .filter(p => (now - p.timestamp) < windowSec) // only count recent pending
+    .reduce((sum, p) => sum + p.sats, 0);
 }
 
 function saveBudget(data) {
@@ -37,11 +64,20 @@ async function getCurrentWeekStart() {
   return Math.floor(now.getTime() / 1000);
 }
 
-async function getOutgoingForPeriod(from_ts, client) {
+async function getOutgoingForPeriod(from_ts, client, state = "settled") {
   const txs = await client.listTransactions({ type: "outgoing", from: from_ts, limit: 500 });
   return txs.transactions
-    .filter(t => t.state === "settled")
+    .filter(t => t.state === state)
     .reduce((sum, t) => sum + (t.amount / 1000), 0);
+}
+
+// Calculate effective spent: settled in rolling window + in-flight pending
+async function getEffectiveSpent(client, windowSec) {
+  const now = Math.floor(Date.now() / 1000);
+  const settled = await getOutgoingForPeriod(now - windowSec, client, "settled");
+  const pending = loadPending();
+  const pendingTotal = getPendingTotal(pending, windowSec);
+  return { settled, pending_total: pendingTotal, pending_count: pending.filter(p => (now - p.timestamp) < windowSec).length, effective: settled + pendingTotal };
 }
 
 async function main() {
@@ -87,24 +123,32 @@ async function main() {
     const client = new NWCClient({ nostrWalletConnectUrl: NWC_URL });
     try {
       const weekStart = await getCurrentWeekStart();
+      const windowSec = budget.rolling_window_sec || 86400;
       const spent = await getOutgoingForPeriod(weekStart, client);
+      const { settled, pending_total, pending_count, effective } = await getEffectiveSpent(client, windowSec);
+      
       const remaining = budget.weekly_cap - spent;
+      const remainingEffective = budget.weekly_cap - effective;
       const rate = await getFiatValue({ satoshi: 1, currency: "USD" });
       const spentUsd = (spent * rate).toFixed(2);
+      const effectiveUsd = (effective * rate).toFixed(2);
       const remainingUsd = (remaining * rate).toFixed(2);
+      const remainingEffectiveUsd = (remainingEffective * rate).toFixed(2);
       
       const pct = (spent / budget.weekly_cap * 100).toFixed(1);
-      const status = remaining > 0 ? "✅ Under budget" : "❌ OVER BUDGET";
+      const effectivePct = (effective / budget.weekly_cap * 100).toFixed(1);
+      const status = remainingEffective > 0 ? "✅ Under budget" : "❌ OVER BUDGET";
       
       console.log(`\n══ Budget Guardian ══\n`);
       console.log(`Weekly Cap:    ${budget.weekly_cap.toLocaleString()} sats`);
-      console.log(`Spent:         ${spent.toLocaleString()} sats ($${spentUsd}) — ${pct}%`);
-      console.log(`Remaining:     ${remaining.toLocaleString()} sats ($${remainingUsd})`);
+      console.log(`Settled:       ${spent.toLocaleString()} sats ($${spentUsd}) — calendar week`);
+      console.log(`Rolling ${Math.round(windowSec/3600)}h:        ${settled.toLocaleString()} sats settled + ${pending_total.toLocaleString()} sats pending (${pending_count} in-flight)`);
+      console.log(`Effective:     ${effective.toLocaleString()} sats ($${effectiveUsd}) — ${effectivePct}%`);
+      console.log(`Remaining:     ${Math.max(remainingEffective, 0).toLocaleString()} sats ($${remainingEffectiveUsd})`);
       console.log(`Status:        ${status}`);
-      console.log(`\nWeek started:  ${new Date(weekStart * 1000).toLocaleDateString()}`);
 
-      if (pct > 90) {
-        console.log(`\n⚠️  WARNING: You're at ${pct}% of your weekly budget!`);
+      if (effectivePct > 90) {
+        console.log(`\n⚠️  WARNING: You're at ${effectivePct}% of your budget (${Math.round(windowSec/3600)}h window)!`);
       }
 
       // Show trend
@@ -120,7 +164,50 @@ async function main() {
     return;
   }
 
-  console.log(`Usage: node budget_guardian.js [setup <weekly_sats>|check|reset|status]`);
+  // Show pending payments
+  if (command === "pending") {
+    const pending = loadPending();
+    const now = Math.floor(Date.now() / 1000);
+    const windowSec = budget.rolling_window_sec || 86400;
+    const active = pending.filter(p => (now - p.timestamp) < windowSec);
+    const stale = pending.filter(p => (now - p.timestamp) >= windowSec);
+    
+    if (active.length === 0 && stale.length === 0) {
+      console.log("No pending payments");
+      return;
+    }
+    
+    console.log(`\n══ Pending Payments ══\n`);
+    if (active.length > 0) {
+      console.log(`Active (in window):`);
+      for (const p of active) {
+        console.log(`  ⏳ ${p.sats.toLocaleString()} sats — ${p.description || "no memo"} — ${Math.round(now - p.timestamp)}s ago`);
+      }
+    }
+    if (stale.length > 0) {
+      console.log(`\nStale (outside window):`);
+      for (const p of stale) {
+        console.log(`  ❌ ${p.sats.toLocaleString()} sats — ${p.description || "no memo"} — ${Math.round((now - p.timestamp) / 60)}min ago`);
+      }
+    }
+    return;
+  }
+
+  // Clear stale pending
+  if (command === "clear-pending") {
+    const pending = loadPending();
+    const now = Math.floor(Date.now() / 1000);
+    const windowSec = budget.rolling_window_sec || 86400;
+    const active = pending.filter(p => (now - p.timestamp) < windowSec);
+    const cleared = pending.length - active.length;
+    
+    const pendingFile = path.join(path.dirname(BUDGET_FILE), "pending_payments.json");
+    fs.writeFileSync(pendingFile, JSON.stringify({ payments: active }, null, 2));
+    console.log(`Cleared ${cleared} stale pending payments. ${active.length} remain.`);
+    return;
+  }
+
+  console.log(`Usage: node budget_guardian.js [setup <weekly_sats>|status|reset|pending|clear-pending] [--window=3600]`);
 }
 
 main().catch(e => {
