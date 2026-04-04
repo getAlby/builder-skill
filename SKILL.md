@@ -1,47 +1,130 @@
 ---
-name: alby-bitcoin-builder
-description: Add bitcoin lightning wallet capabilities to your app using Nostr Wallet Connect (NIP-47), LNURL, and WebLN. Send and receive payments, handle payment notifications, fetch wallet balance and transaction list, do bitcoin to fiat currency conversions, query lightning addresses, conditionally settle payments (HOLD invoices), parse BOLT-11 invoices, verify payment preimages.
-license: Apache-2.0
-metadata:
-  author: getAlby
-  version: "1.2.1"
+name: alby-bitcoin-payments
+description: Bitcoin Lightning wallet via NWC. Say anything natural, get styled receipts. Every payment cryptographically proven with SHA-256 preimage verification.
+version: "7.0.0"
 ---
 
-# Usage
+## What This Is
 
-Use this skill to understand how to build apps that require bitcoin lightning wallet capabilities.
+A complete Bitcoin Lightning wallet powered by Alby's Nostr Wallet Connect. The agent handles everything — the user just talks naturally.
 
-- [NWC Client: Interact with a wallet to do things like sending and receive payments, listen to payment notifications, fetch balance and transaction list and wallet info](./references/nwc-client/nwc-client.md)
-- [Lightning Tools: Request invoices from a lightning address, parse BOLT-11 invoices, verify a preimage for a BOLT-11 invoice, LNURL-Verify, do bitcoin <-> fiat conversions](./references/lightning-tools/lightning-tools.md)
-- [Bitcoin Connect: Browser-only UI components for connecting wallets and accepting payments in React, Vue, or pure HTML web apps](./references/bitcoin-connect/bitcoin-connect.md)
+## How It Works
 
-## Prefer Typescript
+User → says anything natural → agent does everything → styled receipt.
 
-When the user says to use "JS" or "Javascript" or "NodeJS" or something similar, use typescript unless the user explicitly says to not use typescript or the project does not support it.
+```
+User: "send 500 to alice@getalby.com"
+User: "balance"
+User: "create invoice for 1000 sats"
+User: "my wallet"         ← one command, everything
+User: "verify this payment"
+```
 
-## Imports
+## Core Agent Rules
 
-Do NOT import from the dist directory.
+**On session start:**
+1. Read `wallet.nwc_url` from `~/.hermes/config_local.json`
+2. If auto-ledger not running, start it in background
+3. Show balance
 
-## Read the Typings
+**On every wallet operation:**
+- `cd /root/.hermes/skills/alby-bitcoin-payments` first
+- NWC returns millisats → always divide by 1000
+- Always include fiat equivalent (USD default)
+- NWC URL → never echo back
 
-Based on what functionality you require, read the relevant typings:
+**Before sending:**
+1. Decode destination → show amount, fiat, recipient
+2. Confirm: `"Send X sats ($Y) to Z? Reply YES to confirm."`
+3. After paying → verify in `listTransactions()` (NWC can report false success)
+4. Generate styled PIL card → deliver as MEDIA
 
-- [NWC Client](./references/nwc-client/nwc.d.ts)
-- [Lightning Tools](./references/lightning-tools/index.d.ts)
-- [Bitcoin Connect](./references/bitcoin-connect/bundle.d.ts)
-- [Bitcoin Connect React](./references/bitcoin-connect/react.bundle.d.ts)
+**On invoice creation:**
+- BOLT-11 in code block (one-tap copy)
+- QR code as MEDIA image
+- Include sats + fiat
 
-## Testing Wallets
+**On BOLT-11 or lightning address in any message:**
+- Auto-decode → show details → offer next action
 
-If the user doesn't have a wallet yet, or needs one for development or testing, [testing wallets can be created with a single request](./references/testing-wallets.md).
+## Response Style
 
-### Automated Testing
+**Telegram/messaging:** Always PIL card as MEDIA, emoji summary
+**Terminal:** ASCII panel + clean text
 
-Testing wallets should be used for [automated testing](./references/automated-testing.md).
+### Balance Card
+```
+Wallet: alias | mainnet
+Balance: 1,234 sats
+$ 1.23 USD  ·  € 1.07 EUR  ·  KSh 159.20 KES
+```
 
-It is recommended to write tests so that the agent can test its own work and fix bugs itself without requiring human input.
+### Transaction Row
+```
+→ +100 sats ($0.07) ✅ | description  | bal: 1,234
+←  -50 sats ($0.03)  ✅ | to alice     | bal: 1,184
+```
 
-## Production Wallet
+### Payment Proof
+```
+Payment Hash:    a863be4753fe982d...
+SHA-256(preimage): a863be4753fe982d...
+✅ MATCH — Preimage: 9137715c...59b1
+```
 
-If they do not have a wallet yet [here are some options](./references/production-wallets.md)
+## Behind the Scenes
+
+| Feature | Script | What It Does |
+|---|---|---|
+| Summary | `summary.js` | One-command wallet overview |
+| Balance | `balance.js` | Multi-currency balance (USD/EUR/KES) |
+| Invoice | `qr_invoice.js` | BOLT-11 invoice + QR code |
+| Decode | `decode.js` | Parse invoices or lightning addresses |
+| Analytics | `analytics.js` | Period reports with top transactions |
+| Auto-Ledger | `auto_ledger.js` | Background: real-time payments + crypto proofs |
+| Validate | `validate.js` | Standalone preimage verification |
+| Budget | `budget_guardian.js` | Weekly spending caps with alerts |
+| Streaks | `streaks.js` | Activity milestones & gamification |
+| Multi-Wallet | `wallets.js` | Add/switch/remove wallets |
+| Health | `health_check.js` | 6-point diagnostics |
+| Export | `export_ledger.js` | CSV export for tax/audit |
+
+## Auto-Ledger (The Trustless Core)
+
+Every settled payment gets automatically:
+1. **Verified** — SHA-256(preimage) == payment_hash
+2. **Saved** — Persistent ledger at `~/.hermes/ledgers/transactions_ledger.json`
+3. **Proved** — Individual proof files in `~/.hermes/ledgers/proofs/`
+
+No transaction is ever lost. No payment can be disputed. Mathematics, not promises.
+
+## Budget Guardian
+
+Set a weekly spending cap. The system tracks and alerts at 90%. Pre-commitment removes the temptation of impulse spending.
+
+```
+node budget_guardian.js setup 5000    # 5000 sats/week
+node budget_guardian.js status        # Current usage
+node budget_guardian.js reset         # Reset for new week
+```
+
+## Environment
+
+| Path | Purpose |
+|------|---------|
+| `/root/.hermes/skills/alby-bitcoin-payments/` | Skill root — always `cd` here first |
+| `/usr/bin/python3` | PIL/Pillow card generation (NOT venv python) |
+| `~/.hermes/ledgers/` | Auto-ledger + proof files |
+| `~/.hermes/config_local.json` | NWC URL + user config |
+
+**Requirements:** Node.js 22+, Python 3 with Pillow, `@getalby/sdk`, `@getalby/lightning-tools`
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `Cannot find module` | Run from skill directory — deps are in local `node_modules/` |
+| Connection refused | NWC URL expired — ask for a new one |
+| Amount looks 1000x wrong | NWC = millisats. Divide by 1000. |
+| `payInvoice` reported success but no transaction | NWC can lie. Always check `listTransactions()` after paying |
+| PIL import fails | Use `/usr/bin/python3` — the agent's venv python doesn't have Pillow |

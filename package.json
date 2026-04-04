@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@getalby/lightning-tools": "^7.0.2",
+    "@getalby/sdk": "^7.0.0",
+    "bolt12-decoder": "^1.0.0",
+    "light-bolt11-decoder": "^3.2.0",
+    "qrcode": "^1.5.4"
+  }
+}
