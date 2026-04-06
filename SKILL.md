@@ -1,6 +1,6 @@
 ---
 name: alby-bitcoin-payments
-description: Bitcoin Lightning wallet via NWC. Say anything natural, get styled receipts. Every payment cryptographically proven with SHA-256 preimage verification.
+description: Bitcoin Lightning wallet via NWC. Say anything natural, get confirmed transactions. Every payment cryptographically proven with SHA-256 preimage verification.
 version: "7.0.0"
 ---
 
@@ -10,7 +10,7 @@ A complete Bitcoin Lightning wallet powered by Alby's Nostr Wallet Connect. The 
 
 ## How It Works
 
-User → says anything natural → agent does everything → styled receipt.
+User → says anything natural → agent does everything → confirmation.
 
 ```
 User: "send 500 to alice@getalby.com"
@@ -27,30 +27,28 @@ User: "verify this payment"
 2. If auto-ledger not running, start it in background
 3. Show balance
 
+**SECURITY: NWC URL MUST NEVER be displayed, echoed, or shared in any output, logs, or chat.**
+
 **On every wallet operation:**
 - `cd /root/.hermes/skills/alby-bitcoin-payments` first
 - NWC returns millisats → always divide by 1000
 - Always include fiat equivalent (USD default)
-- NWC URL → never echo back
+- NWC URL → never echo, never log, never display in any form
+- Read URL only from `~/.hermes/config_local.json` (chmod 600) — never ask user for it again
 
 **Before sending:**
 1. Decode destination → show amount, fiat, recipient
 2. Confirm: `"Send X sats ($Y) to Z? Reply YES to confirm."`
 3. After paying → verify in `listTransactions()` (NWC can report false success)
-4. Generate styled PIL card → deliver as MEDIA
 
 **On invoice creation:**
 - BOLT-11 in code block (one-tap copy)
-- QR code as MEDIA image
 - Include sats + fiat
 
 **On BOLT-11 or lightning address in any message:**
 - Auto-decode → show details → offer next action
 
 ## Response Style
-
-**Telegram/messaging:** Always PIL card as MEDIA, emoji summary
-**Terminal:** ASCII panel + clean text
 
 ### Balance Card
 ```
@@ -108,16 +106,54 @@ node budget_guardian.js status        # Current usage
 node budget_guardian.js reset         # Reset for new week
 ```
 
+## Initial Setup
+
+1. `cd ~/.hermes/skills/alby-bitcoin-payments`
+2. Run `npm install` (uses `package.json` in skill root)
+3. Set NWC URL in `~/.hermes/config_local.json` under `wallet.nwc_url`
+   ```json
+   {"wallet": {"nwc_url": "nostr+walletconnect://..."}}
+   ```
+4. Set file permissions: `chmod 600 ~/.hermes/config_local.json`
+5. Start auto-ledger: `export NWC_URL=$(python3 -c "import json; print(json.load(open('~/.hermes/config_local.json'))['wallet']['nwc_url'])") && node scripts/auto_ledger.js &`
+
+### Running Scripts
+
+Always export NWC URL first (scripts read from env, not config file):
+```bash
+cd ~/.hermes/skills/alby-bitcoin-payments
+export NWC_URL=$(python3 -c "import json; print(json.load(open('~/.hermes/config_local.json'))['wallet']['nwc_url'])")
+node scripts/balance.js
+```
+
 ## Environment
 
 | Path | Purpose |
 |------|---------|
 | `/root/.hermes/skills/alby-bitcoin-payments/` | Skill root — always `cd` here first |
-| `/usr/bin/python3` | PIL/Pillow card generation (NOT venv python) |
 | `~/.hermes/ledgers/` | Auto-ledger + proof files |
 | `~/.hermes/config_local.json` | NWC URL + user config |
 
-**Requirements:** Node.js 22+, Python 3 with Pillow, `@getalby/sdk`, `@getalby/lightning-tools`
+**Script Execution:** Always export the NWC URL before running scripts:
+```bash
+export NWC_URL=$(python3 -c "import json; print(json.load(open('/root/.hermes/config_local.json'))['wallet']['nwc_url'])")
+```
+
+**Important Script Argument Orders:**
+- `pay.js` — takes `<amount_sats>` then `<recipient>`: `pay.js 100 user@domain.com` (amount first!)
+- `qr_invoice.js` — takes `<amount_sats>` then `<description>`: `qr_invoice.js 100 "my invoice"`
+
+**Key Operational Notes:**
+- The `@getalby/sdk` NWCClient must be imported from `@getalby/sdk/nwc` (not the main module)
+- The `package.json` may not be present in the installed skill directory — it's in the clone root, needed for `npm install`
+- The auto-ledger (`auto_ledger.js`) does NOT start automatically — run it manually in background after wallet setup:
+  ```bash
+  mkdir -p ~/.hermes/ledgers/proofs && node scripts/auto_ledger.js &
+  ```
+- Payment verification via NWC `listTransactions()` is the authoritative source — NWC `payInvoice()` can report false success
+- SHA-256 preimage verification: `crypto.createHash('sha256').update(Buffer.from(preimage, 'hex')).digest('hex')` should match `payment_hash`
+
+**PIL cards:** Disabled. Do not generate styled PIL receipt cards. Just use text confirmations and ASCII panels.
 
 ## Troubleshooting
 
