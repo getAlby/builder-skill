@@ -91,7 +91,8 @@ import {
   validatePreimage,
 } from "@getalby/lightning-tools";
 
-const MACAROON_SECRET = randomBytes(32).toString("hex");
+// Make sure to set a macaroon secret to persist across startups
+const MACAROON_SECRET = process.env.MACAROON_SECRET || randomBytes(32).toString("hex");
 const app = Fastify();
 
 // IMPORTANT: expose WWW-Authenticate so browser clients can read it (see CORS note below)
