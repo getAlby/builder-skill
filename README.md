@@ -1,79 +1,74 @@
-# Alby Bitcoin Builder Skill
+# Alby Bitcoin Lightning Wallet Skill — Community Edition
 
-Turn your favorite agent into a bitcoin app builder.
+A complete Bitcoin Lightning wallet powered by Alby's Nostr Wallet Connect. The agent handles everything — you just talk naturally.
 
-Generate lightning-powered apps, payment flows, and wallet logic in minutes - ready to test and ship, without even needing a wallet.
+Every payment gets **cryptographically proven** with SHA-256 preimage verification. No transaction is ever lost. No payment can be disputed.
 
-Before you start, try **[Alby Sandbox](https://sandbox.albylabs.com)** to see what you can build!
+## What It Does
 
-This repository contains an [agent skill](https://agentskills.io/specification) that helps agents use the [Alby JS SDK](https://github.com/getAlby/js-sdk) and [Alby Lightning Tools](https://github.com/getAlby/js-lightning-tools).
+| Say This | Get This |
+|----------|----------|
+| "balance" | Multi-currency balance + styled card |
+| "create invoice 100 sats" | BOLT-11 + QR code + styled receipt |
+| "send 500 to alice@getalby.com" | Confirmed payment with preimage proof |
+| "wallet summary" | Complete one-command overview |
+| "verify this payment" | SHA-256 cryptographic proof |
 
-> Also check out our **[Wallet CLI skill](https://github.com/getAlby/alby-cli-skill)**
+## Features
 
-## Getting Started
+- **Auto-Ledger** — Background process that verifies and saves every settled payment with SHA-256 preimage proofs
+- **Budget Guardian** — Weekly spending caps with 90% alerts (commitment device)
+- **Multi-Wallet** — Add, switch, and manage multiple N wallets
+- **Activity Milestones** — Gamified streak tracking
+- **Styled Receipt Cards** — Beautiful PIL/Pillow cards for messaging platforms
+- **6-Point Health Diagnostics** — Instant wallet status check
+- **CSV Export** — Tax-ready, audit-proof transaction records
+- **Safety Confirmations** — Mandatory confirmation before any outgoing payment
+- **NWC Lie Detection** — Verifies every payment appears in transaction history after send
 
-### 🚀 Install with single command
+## Install
 
-`npx skills add getAlby/alby-agent-skill`
+### For Hermes Agent Users
 
-### Manual Install
+```bash
+# Drop into your skills directory
+git clone https://github.com/getAlby/alby-agent-skill.git ~/.hermes/skills/alby-bitcoin-payments
+cd ~/.hermes/skills/alby-bitcoin-payments
+npm install @getalby/sdk @getalby/lightning-tools light-bolt11-decoder qrcode
+```
 
-[Download](https://github.com/getAlby/alby-agent-skill/archive/refs/heads/master.zip) this repository and extract it, then follow instructions for your specific agent.
+### Configure
 
-> Double check the skill is activated by asking your agent "What Skills are available?". It should include "Alby Agent Skill"
+Save your NWC URL in `~/.hermes/config_local.json`:
 
-### Claude Code
+```json
+{
+  "wallet": {
+    "nwc_url": "nostr+walletconnect://..."
+  }
+}
+```
 
-Make a `.claude/skills` folder in your project and put the extracted skills folder there ([see other options](https://code.claude.com/docs/en/skills#where-skills-live))
+### Requirements
 
-### Gemini CLI
+- Node.js 22+
+- Python 3 with Pillow (for styled cards)
+- Alby NWC wallet connection
 
-Make a `.gemini/skills` folder in your project and put the extracted skills folder there ([see other options](https://geminicli.com/docs/cli/skills/#skill-discovery-tiers))
+## Test Wallet
 
-### Roo Code
+Get instant test wallet with 10,000 sats:
 
-Make a `.roo/skills` folder in your project and put the extracted skills folder there ([see other options](https://docs.roocode.com/features/skills#1-choose-a-location))
+```bash
+curl -X POST https://faucet.nwc.dev?balance=10000
+```
 
-## Test / Dummy Wallets
+## What Makes This Special
 
-Alby Agent skill has the knowledge to create dummy wallets for testing. You can build and test your app end-to-end without creating a wallet. Once you are ready, the agent skill can also help you setup a wallet to use in production.
+Every payment is a **trustless cryptographic event**. The preimage proves it happened — mathematics, not promises.
 
-## Example prompts
+A wallet without verified preimages is just a claim. This skill turns claims into proof.
 
-> Explore more prompts in the **[Alby Sandbox](https://sandbox.albylabs.com)**
+---
 
-### Console Apps
-
-#### Listen to received payments and send a payment to a lightning address with USD amounts
-
-> Use the Alby Bitcoin Payments Agent Skill to create a TypeScript console app that when receives a notification of an incoming payment, sends $0.10 USD to <hello@getalby.com>. The NWC_URL is in the .env file.
-
-<img width="699" height="496" alt="image" src="https://github.com/user-attachments/assets/66c7dd1f-54ae-4f5d-9830-dd032cfb9e1b" />
-
-#### Conditionally receive payments (NOTE: only supported by Alby Hub)
-
-> Use the Alby Bitcoin Payments Agent Skill to create a TypeScript console app that creates a hold invoice of $1 and asks the user to provide a lightning address and choose heads or tails. Once the hold invoice is accepted, flip a coin. If the user guessed correctly, cancel the hold invoice and pay the user $1 to their lightning address. If the user guessed incorrectly, settle the hold invoice. The NWC_URL is in the .env file.
-
-<img width="947" height="654" alt="image" src="https://github.com/user-attachments/assets/530fccff-33fe-4e68-8998-20f3649cfe7c" />
-
-### Frontend Apps
-
-#### Streamer QR page with payment notifications
-
-> Use the Alby Bitcoin Payments Agent Skill to create a single-page HTML app that listens to incoming payments, and each time one comes in, shows a confetti animation and the payment amount and message. It should also have a QR code of the receiving lightning address that should be displayed on the corner of the screen so people watching can easily send payments. When I first open the page it should prompt me for a NWC connection secret so it can connect to my wallet to listen for payments, and also extract the lightning address from the NWC connection secret for the QR code.
-
-<img width="1432" height="806" alt="image" src="https://github.com/user-attachments/assets/979a3034-99ac-4481-8e32-9750486eb996" />
-
-### Testing
-
-#### Example test for a backend or console app
-
-> Use the Alby Bitcoin Payments Agent Skill to create a TypeScript console app where Alice creates an invoice and Bob pays it. Write tests for it using jest.
-
-#### Example test for a frontend app (vitest + Playwright)
-
-> Use the Alby Bitcoin Payments Agent Skill to create a Vite TypeScript React app where a user can connect their wallet and then purchase fake cat pictures (simple canvas art) with a single click. Each picture costs 5000 sats. Show the total the shop has earned and their remaining stock of cat pictures. There should only be 21. Write tests for the app using vitest and playwright. Also take screenshots and review the screenshots.
-
-## Development
-
-Examples are hand-written, but lack the necessary typing information. Types are copied directly from the referenced projects using [this script](./regenerate-types.sh)
+Built on: [Alby JS SDK](https://github.com/getAlby/js-sdk) · [Alby Lightning Tools](https://github.com/getAlby/js-lightning-tools) · [NIP-47 NWC Protocol](https://github.com/nostr-protocol/nips/blob/master/47.md)
