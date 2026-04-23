@@ -14,7 +14,7 @@ This repository contains an [agent skill](https://agentskills.io/specification) 
 
 ### 🚀 Install with single command
 
-`npx skills add getAlby/alby-agent-skill`
+`npx skills add getAlby/builder-skill`
 
 ### Manual Install
 
