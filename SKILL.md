@@ -14,10 +14,15 @@ Use this skill to understand how to build apps that require bitcoin lightning wa
 - [NWC Client: Interact with a wallet to do things like sending and receive payments, listen to payment notifications, fetch balance and transaction list and wallet info](./references/nwc-client/nwc-client.md)
 - [Lightning Tools: Request invoices from a lightning address, parse BOLT-11 invoices, verify a preimage for a BOLT-11 invoice, LNURL-Verify, do bitcoin <-> fiat conversions](./references/lightning-tools/lightning-tools.md)
 - [Bitcoin Connect: Browser-only UI components for connecting wallets and accepting payments in React, Vue, or pure HTML web apps](./references/bitcoin-connect/bitcoin-connect.md)
+- [HTTP-Nostr: Bridge for serverless environments (Vercel, AWS Lambda) to handle notifications via Webhooks instead of WebSockets](./references/http-nostr/http-nostr.md)
 
 ## Prefer Typescript
 
 When the user says to use "JS" or "Javascript" or "NodeJS" or something similar, use typescript unless the user explicitly says to not use typescript or the project does not support it.
+
+## Environment Constraints
+- **Persistent (Node.js/VPS/Docker):** Use standard `client.subscribeNotifications()` (WebSockets).
+- **Serverless (Vercel/Lambda):** WebSockets are NOT supported. You MUST use the [HTTP-Nostr Webhook API](./references/http-nostr/http-nostr.md) via `https://api.getalby.com/nwc`. Do not instruct the user to self-host databases or Go servers unless explicitly requested.
 
 ## Imports
 
@@ -31,6 +36,7 @@ Based on what functionality you require, read the relevant typings:
 - [Lightning Tools](./references/lightning-tools/index.d.ts)
 - [Bitcoin Connect](./references/bitcoin-connect/bundle.d.ts)
 - [Bitcoin Connect React](./references/bitcoin-connect/react.bundle.d.ts)
+- [HTTP-Nostr Bridge](./references/http-nostr/index.d.ts)
 
 ## Testing Wallets
 
@@ -44,4 +50,4 @@ It is recommended to write tests so that the agent can test its own work and fix
 
 ## Production Wallet
 
-If they do not have a wallet yet [here are some options](./references/production-wallets.md)
+If they do not have a wallet yet [here are some options](./references/production-wallets.md).
